@@ -6,37 +6,47 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import {
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+import {
   getFirestore,
   collection,
   addDoc,
-  onSnapshot,   // ✅ ADD THIS
+  onSnapshot,
   deleteDoc,
   doc,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import {
-      getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-      onAuthStateChanged, signOut
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    // ✅ YOUR CONFIG (already added)
-    const firebaseConfig = {
-      apiKey: "AIzaSyB5PdxuusJM-Pq-rAHRMFuXywsYwkO8qWY",
-      authDomain: "shabbiripacking.firebaseapp.com",
-      projectId: "shabbiripacking",
-      storageBucket: "shabbiripacking.firebasestorage.app",
-      messagingSenderId: "793869127526",
-      appId: "1:793869127526:web:c9cbc491644f4dd89902a7"
-    };
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+const firebaseConfig = {
+  apiKey: "AIzaSyB5PdxuusJM-Pq-rAHRMFuXywsYwkO8qWY",
+  authDomain: "shabbiripacking.firebaseapp.com",
+  projectId: "shabbiripacking",
+  storageBucket: "shabbiripacking.firebasestorage.app",
+  messagingSenderId: "793869127526",
+  appId: "1:793869127526:web:c9cbc491644f4dd89902a7"
+};
 
-    window.firebaseApp = { db, auth };
-  </script>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// ===== TEST (IMPORTANT) =====
+console.log("Firebase Loaded:", typeof onSnapshot);
+
+// ===== YOUR REALTIME CODE =====
+onSnapshot(collection(db, "items"), (snapshot) => {
+  console.log("Realtime working", snapshot.size);
+});
+</script>
 </head>
 
 <body class="bg-gray-100">
