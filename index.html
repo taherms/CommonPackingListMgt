@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Packing List App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    // 🔥 REPLACE THIS CONFIG
+    const firebaseConfig = {
+    
+      apiKey: "AIzaSyB5PdxuusJM-Pq-rAHRMFuXywsYwkO8qWY",
+  authDomain: "shabbiripacking.firebaseapp.com",
+  projectId: "shabbiripacking"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    window.appData = { db, auth };
+  </script>
+</head>
+
+<body class="bg-gray-100">
+
+<div id="app" class="p-4"></div>
+
+<script type="module">
+  const { db, auth } = window.appData;
+  const app = document.getElementById("app");
+
+  const categories = ["Clothes", "Electronics", "Documents", "Kitchen", "Medicines", "Misc"];
+  const statuses = ["To Buy", "Purchased", "Packed", "Not Needed"];
+
+  let items = [];
+  let user = null;
+
+  // ================= LOGIN UI =================
+  function renderLogin() {
+    app.innerHTML = `
+      <div class="max-w-md mx-auto bg-white p-6 rounded shadow">
+        <h2 class="text-xl font-bold mb-4">Login</h2>
+        <input id="email" placeholder="Email" class="border p-2 w-full mb-2"/>
+        <input id="password" type="password" placeholder="Password" class="border p-2 w-full mb-2"/>
+        <button id="loginBtn" class="bg-blue-500 text-white px-4 py-2 w-full mb-2">Login</button>
+        <button id="signupBtn" class="bg-green-500 text-white px-4 py-2 w-full">Sign Up</button>
+      </div>
+    `;
+
+    document.getElementById("loginBtn").onclick = async () => {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+      await signInWithEmailAndPassword(auth, email, password);
+    };
+
+    document.getElementById("signupBtn").onclick = async () => {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+      await createUserWithEmailAndPassword(auth, email, password);
+    };
+  }
+
+  // ================= DASHBOARD =================
+  function renderApp() {
+    app.innerHTML = `
+      <div class="flex justify-between mb-4">
+        <h1 class="text-2xl font-bold">Packing List</h1>
+        <button id="logout" class="bg-red-500 text-white px-3 py-1">Logout</button>
+      </div>
+
+      <div class="flex gap-2 mb-4">
+        <input id="search" placeholder="Search..." class="border p-2 flex-1"/>
+        <select id="categoryFilter" class="border p-2">
+          <option value="">All</option>
+          ${categories.map(c => `<option>${c}</option>`).join("")}
+        </select>
+      </div>
+
+      <div class="bg-white p-4 rounded shadow mb-4">
+        <h2 class="font-bold mb-2">Add Item</h2>
+        <input id="name" placeholder="Item name" class="border p-2 mb-2 w-full"/>
+        <select id="category" class="border p-2 mb-2 w-full">
+          ${categories.map(c => `<option>${c}</option>`).join("")}
+        </select>
+        <select id="status" class="border p-2 mb-2 w-full">
+          ${statuses.map(s => `<option>${s}</option>`).join("")}
+        </select>
+        <button id="addBtn" class="bg-blue-500 text-white px-4 py-2 w-full">Add</button>
+      </div>
+
+      <div id="list" class="grid gap-2"></div>
+    `;
+
+    document.getElementById("logout").onclick = () => signOut(auth);
+
+    document.getElementById("addBtn").onclick = async () => {
+      await addDoc(collection(db, "items"), {
+        name: name.value,
+        category: category.value,
+        status: status.value,
+        createdBy: user.email
+      });
+    };
+
+    document.getElementById("search").oninput = renderList;
+    document.getElementById("categoryFilter").onchange = renderList;
+
+    renderList();
+  }
+
+  // ================= LIST =================
+  function renderList() {
+    const search = document.getElementById("search").value.toLowerCase();
+    const filter = document.getElementById("categoryFilter").value;
+
+    const filtered = items.filter(i =>
+      i.name.toLowerCase().includes(search) &&
+      (!filter || i.category === filter)
+    );
+
+    document.getElementById("list").innerHTML = filtered.map(i => `
+      <div class="bg-white p-3 rounded shadow flex justify-between">
+        <div>
+          <div class="font-bold">${i.name}</div>
+          <div class="text-sm">${i.category} | ${i.status}</div>
+        </div>
+        <div class="flex gap-2">
+          <select onchange="updateStatus('${i.id}', this.value)" class="border p-1">
+            ${statuses.map(s => `<option ${s===i.status?'selected':''}>${s}</option>`).join("")}
+          </select>
+          <button onclick="deleteItem('${i.id}')" class="text-red-500">X</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  // ================= FIREBASE ACTIONS =================
+  window.deleteItem = async (id) => {
+    await deleteDoc(doc(db, "items", id));
+  };
+
+  window.updateStatus = async (id, status) => {
+    await updateDoc(doc(db, "items", id), { status });
+  };
+
+  // ================= REALTIME =================
+  onSnapshot(collection(db, "items"), snapshot => {
+    items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderList();
+  });
+
+  // ================= AUTH =================
+  onAuthStateChanged(auth, (u) => {
+    user = u;
+    if (u) renderApp();
+    else renderLogin();
+  });
+
+</script>
+
+</body>
+</html>
