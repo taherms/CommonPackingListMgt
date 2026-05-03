@@ -17,11 +17,13 @@
 
     // 🔥 REPLACE THIS CONFIG
     const firebaseConfig = {
-    
-      apiKey: "AIzaSyB5PdxuusJM-Pq-rAHRMFuXywsYwkO8qWY",
+  apiKey: "AIzaSyB5PdxuusJM-Pq-rAHRMFuXywsYwkO8qWY",
   authDomain: "shabbiripacking.firebaseapp.com",
-  projectId: "shabbiripacking"
-    };
+  projectId: "shabbiripacking",
+  storageBucket: "shabbiripacking.firebasestorage.app",
+  messagingSenderId: "793869127526",
+  appId: "1:793869127526:web:c9cbc491644f4dd89902a7"
+};
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
