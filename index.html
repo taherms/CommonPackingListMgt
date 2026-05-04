@@ -228,10 +228,10 @@ function renderList() {
         <div class="flex justify-between">
           <div>
             <div class="font-semibold">${i.name}</div>
-            <div class="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-2">${i.category}</div>
+            <div class="text-xs text-gray-500 bg-gray-100 rounded-lg px-2 py-2">${i.category}</div>
           </div>
 
-          <span class="text-s px-2 py-1 rounded-full
+          <span class="text-s px-2 py-4 rounded-full
             ${i.status === 'Packed' ? 'bg-green-100 text-green-700' : ''}
             ${i.status === 'Purchased' ? 'bg-yellow-100 text-yellow-700' : ''}
             ${i.status === 'To Buy' ? 'bg-red-100 text-red-700' : ''}
@@ -248,7 +248,7 @@ function renderList() {
           </select>
 
           <button onclick="deleteItem('${i.id}')"
-            class="bg-red-50 text-red-500 px-3 py-4 rounded-lg font-bold">
+            class="bg-red-50 text-red-500 px-3 py-2 rounded-lg font-bold">
             ✕
           </button>
         </div>
