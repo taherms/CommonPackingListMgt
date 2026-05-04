@@ -116,18 +116,27 @@ function renderApp() {
 
   document.getElementById("logout").onclick = () => signOut(auth);
 
-  document.getElementById("addBtn").onclick = async () => {
-    if (!name.value) return alert("Enter item name");
+addBtn.onclick = async () => {
+  const nameInput = document.getElementById("name");
+  const categoryInput = document.getElementById("category");
+  const statusInput = document.getElementById("status");
 
-    await addDoc(collection(db, "items"), {
-      name: name.value,
-      category: category.value,
-      status: status.value,
-      createdBy: user.email
-    });
+  const itemName = nameInput.value.trim();
 
-    name.value = "";
-  };
+  if (!itemName) {
+    alert("Enter item name");
+    return;
+  }
+
+  await addDoc(collection(db, "items"), {
+    name: itemName,
+    category: categoryInput.value,
+    status: statusInput.value,
+    createdBy: user.email
+  });
+
+  nameInput.value = "";
+};
 
   document.getElementById("search").oninput = renderList;
   document.getElementById("filter").onchange = renderList;
