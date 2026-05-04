@@ -122,21 +122,35 @@ function renderApp() {
 
   document.getElementById("logout").onclick = () => signOut(auth);
 
-  document.getElementById("addBtn").onclick = async () => {
-    const nameInput = document.getElementById("name");
-    const itemName = nameInput.value.trim();
+document.getElementById("addBtn").onclick = async () => {
+  const nameInput = document.getElementById("name");
+  const categoryInput = document.getElementById("category");
+  const statusInput = document.getElementById("status");
 
-    if (!itemName) return alert("Enter item name");
+  const name = nameInput.value.trim();
+  const category = categoryInput.value;
+  const status = statusInput.value;
 
+  // 🔥 validation (prevents Firebase crash)
+  if (!name) return alert("Enter item name");
+  if (!category) return alert("Select category");
+  if (!status) return alert("Select status");
+
+  try {
     await addDoc(collection(db, "items"), {
-      name: itemName,
-      category: category.value,
-      status: status.value,
-      createdBy: user.email
+      name,
+      category,
+      status,
+      createdBy: user.email,
+      createdAt: new Date()
     });
 
     nameInput.value = "";
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Failed to add item: " + err.message);
+  }
+};
 
   document.getElementById("search").oninput = renderList;
   document.getElementById("filter").onchange = renderList;
