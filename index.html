@@ -40,6 +40,7 @@ import {
   onSnapshot,
   deleteDoc,
   doc,
+  getDocs,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -68,12 +69,42 @@ const auth = getAuth(app);
 
 const appDiv = document.getElementById("app");
 
-const categories = ["Clothes","Electronics","Documents","Kitchen","Medicines","Misc"];
-const statuses = ["To Buy","Purchased","Packed","Not Needed"];
-
+//const categories = ["Clothes","Electronics","Documents","Kitchen","Medicines","Misc"];
+//const statuses = ["To Buy","Purchased","Packed","Not Needed"];
+let categories = [];
+let statuses = [];
+  
 let items = [];
 let user = null;
 
+// ================ LOAD CONFIG =============
+  async function loadConfig() {
+  const catSnap = await getDocs(collection(db, "config_categories"));
+  const statusSnap = await getDocs(collection(db, "config_statuses"));
+
+  // If empty → seed defaults
+  if (catSnap.empty) {
+    const defaultCats = ["Clothes","Electronics","Documents","Kitchen","Medicines","Misc"];
+    for (const c of defaultCats) {
+      await addDoc(collection(db, "config_categories"), { name: c });
+    }
+  }
+
+  if (statusSnap.empty) {
+    const defaultStatuses = ["To Buy","Purchased","Packed","Not Needed"];
+    for (const s of defaultStatuses) {
+      await addDoc(collection(db, "config_statuses"), { name: s });
+    }
+  }
+
+  // Re-fetch after seeding
+  const catSnap2 = await getDocs(collection(db, "config_categories"));
+  const statusSnap2 = await getDocs(collection(db, "config_statuses"));
+
+  categories = catSnap2.docs.map(d => d.data().name);
+  statuses = statusSnap2.docs.map(d => d.data().name);
+}
+  
 // ================= LOGIN =================
 function renderLogin() {
   appDiv.innerHTML = `
@@ -252,8 +283,12 @@ onSnapshot(collection(db, "items"), (snapshot) => {
 // ================= AUTH =================
 onAuthStateChanged(auth, (u) => {
   user = u;
-  if (u) renderApp();
-  else renderLogin();
+  if (u) {
+    await loadConfig();   // 🔥 IMPORTANT
+    renderApp();
+  } else {
+    renderLogin();
+  }
 });
 
 </script>
