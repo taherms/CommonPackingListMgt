@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Packing List App</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    fetch("https://api.github.com/repos/taherms/CommonPackingListMgt/commits/main")
+  .then(res => res.json())
+  .then(data => {
+    const hash = data.sha.substring(0, 7);
+    document.getElementById("version").innerText = "commit " + hash;
+  });
+  </script>
 </head>
 
 <body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen flex flex-col">
@@ -17,6 +25,7 @@
     🚀 Packing List App | Built by <strong>Taher Shabbiri</strong> | 
     
     GitHub: <a href="https://github.com/taherms" target="_blank" class="text-blue-500 underline">taherms</a>
+     | Version: <span id="version"></span>
   </div>
 </footer>
 
