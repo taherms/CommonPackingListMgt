@@ -279,6 +279,11 @@ onAuthStateChanged(auth, async (u) => {
   if (u) {
     await loadConfig();
     renderApp();
+    onSnapshot(collection(db, "items"), (snapshot) => {
+      items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderList();
+    });
+
   } else {
     renderLogin();
   }
