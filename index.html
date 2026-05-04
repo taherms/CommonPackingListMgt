@@ -4,8 +4,13 @@
   <meta charset="UTF-8" />
   <title>Packing List App</title>
   <script src="https://cdn.tailwindcss.com"></script>
+</head>
 
-  <script type="module">
+<body class="bg-gray-100">
+<div id="app" class="p-4"></div>
+
+<script type="module">
+// ================= FIREBASE IMPORTS =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 
 import {
@@ -26,6 +31,7 @@ import {
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+// ================= FIREBASE CONFIG =================
 const firebaseConfig = {
   apiKey: "AIzaSyB5PdxuusJM-Pq-rAHRMFuXywsYwkO8qWY",
   authDomain: "shabbiripacking.firebaseapp.com",
@@ -35,154 +41,150 @@ const firebaseConfig = {
   appId: "1:793869127526:web:c9cbc491644f4dd89902a7"
 };
 
+// ================= INIT =================
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// ===== TEST (IMPORTANT) =====
-console.log("Firebase Loaded:", typeof onSnapshot);
+const appDiv = document.getElementById("app");
 
-// ===== YOUR REALTIME CODE =====
-onSnapshot(collection(db, "items"), (snapshot) => {
-  console.log("Realtime working", snapshot.size);
-});
-</script>
-</head>
+// ================= DATA =================
+const categories = ["Clothes","Electronics","Documents","Kitchen","Medicines","Misc"];
+const statuses = ["To Buy","Purchased","Packed","Not Needed"];
 
-<body class="bg-gray-100">
-<div id="app" class="p-4"></div>
+let items = [];
+let user = null;
 
-<script type="module">
-  const { db, auth } = window.firebaseApp;
-  const app = document.getElementById("app");
+// ================= LOGIN =================
+function renderLogin() {
+  appDiv.innerHTML = `
+    <div class="max-w-md mx-auto bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-bold mb-4">Login / Signup</h2>
+      <input id="email" placeholder="Email" class="border p-2 w-full mb-2"/>
+      <input id="password" type="password" placeholder="Password" class="border p-2 w-full mb-2"/>
+      <button id="loginBtn" class="bg-blue-500 text-white px-4 py-2 w-full mb-2">Login</button>
+      <button id="signupBtn" class="bg-green-500 text-white px-4 py-2 w-full">Sign Up</button>
+    </div>
+  `;
 
-  const categories = ["Clothes", "Electronics", "Documents", "Kitchen", "Medicines", "Misc"];
-  const statuses = ["To Buy", "Purchased", "Packed", "Not Needed"];
-
-  let items = [];
-  let user = null;
-
-  // ===== LOGIN =====
-  function renderLogin() {
-    app.innerHTML = `
-      <div class="max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">Login / Signup</h2>
-        <input id="email" placeholder="Email" class="border p-2 w-full mb-2"/>
-        <input id="password" type="password" placeholder="Password" class="border p-2 w-full mb-2"/>
-        <button id="loginBtn" class="bg-blue-500 text-white px-4 py-2 w-full mb-2">Login</button>
-        <button id="signupBtn" class="bg-green-500 text-white px-4 py-2 w-full">Sign Up</button>
-      </div>
-    `;
-
-    loginBtn.onclick = async () => {
+  document.getElementById("loginBtn").onclick = async () => {
+    try {
       await signInWithEmailAndPassword(auth, email.value, password.value);
-    };
+    } catch (e) {
+      alert(e.message);
+    }
+  };
 
-    signupBtn.onclick = async () => {
+  document.getElementById("signupBtn").onclick = async () => {
+    try {
       await createUserWithEmailAndPassword(auth, email.value, password.value);
-    };
-  }
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+}
 
-  // ===== APP =====
-  function renderApp() {
-    app.innerHTML = `
-      <div class="flex justify-between mb-4">
-        <h1 class="text-2xl font-bold">Packing List</h1>
-        <button id="logout" class="bg-red-500 text-white px-3 py-1">Logout</button>
-      </div>
+// ================= MAIN APP =================
+function renderApp() {
+  appDiv.innerHTML = `
+    <div class="flex justify-between mb-4">
+      <h1 class="text-2xl font-bold">Packing List</h1>
+      <button id="logout" class="bg-red-500 text-white px-3 py-1 rounded">Logout</button>
+    </div>
 
-      <div class="flex gap-2 mb-4">
-        <input id="search" placeholder="Search..." class="border p-2 flex-1"/>
-        <select id="filter" class="border p-2">
-          <option value="">All</option>
-          ${categories.map(c => `<option>${c}</option>`).join("")}
-        </select>
-      </div>
+    <div class="flex gap-2 mb-4">
+      <input id="search" placeholder="Search..." class="border p-2 flex-1 rounded"/>
+      <select id="filter" class="border p-2 rounded">
+        <option value="">All Categories</option>
+        ${categories.map(c => `<option>${c}</option>`).join("")}
+      </select>
+    </div>
 
-      <div class="bg-white p-4 rounded shadow mb-4">
-        <input id="name" placeholder="Item name" class="border p-2 mb-2 w-full"/>
-        <select id="category" class="border p-2 mb-2 w-full">
-          ${categories.map(c => `<option>${c}</option>`).join("")}
-        </select>
-        <select id="status" class="border p-2 mb-2 w-full">
-          ${statuses.map(s => `<option>${s}</option>`).join("")}
-        </select>
-        <button id="addBtn" class="bg-blue-500 text-white px-4 py-2 w-full">Add Item</button>
-      </div>
+    <div class="bg-white p-4 rounded shadow mb-4">
+      <input id="name" placeholder="Item name" class="border p-2 mb-2 w-full rounded"/>
+      <select id="category" class="border p-2 mb-2 w-full rounded">
+        ${categories.map(c => `<option>${c}</option>`).join("")}
+      </select>
+      <select id="status" class="border p-2 mb-2 w-full rounded">
+        ${statuses.map(s => `<option>${s}</option>`).join("")}
+      </select>
+      <button id="addBtn" class="bg-blue-500 text-white px-4 py-2 w-full rounded">Add Item</button>
+    </div>
 
-      <div id="list" class="grid gap-2"></div>
-    `;
+    <div id="list" class="grid gap-2"></div>
+  `;
 
-    logout.onclick = () => signOut(auth);
+  document.getElementById("logout").onclick = () => signOut(auth);
 
-    addBtn.onclick = async () => {
-      if (!name.value) return alert("Enter item name");
+  document.getElementById("addBtn").onclick = async () => {
+    if (!name.value) return alert("Enter item name");
 
-      await addDoc(collection(db, "items"), {
-        name: name.value,
-        category: category.value,
-        status: status.value,
-        createdBy: user.email
-      });
+    await addDoc(collection(db, "items"), {
+      name: name.value,
+      category: category.value,
+      status: status.value,
+      createdBy: user.email
+    });
 
-      name.value = "";
-    };
-
-    search.oninput = renderList;
-    filter.onchange = renderList;
-
-    renderList();
-  }
-
-  // ===== LIST =====
-  function renderList() {
-    if (!document.getElementById("list")) return;
-
-    const searchVal = (search?.value || "").toLowerCase();
-    const filterVal = filter?.value || "";
-
-    const filtered = items.filter(i =>
-      i.name.toLowerCase().includes(searchVal) &&
-      (!filterVal || i.category === filterVal)
-    );
-
-    list.innerHTML = filtered.map(i => `
-      <div class="bg-white p-3 rounded shadow flex justify-between">
-        <div>
-          <div class="font-bold">${i.name}</div>
-          <div class="text-sm">${i.category} | ${i.status}</div>
-        </div>
-        <div class="flex gap-2">
-          <select onchange="updateStatus('${i.id}', this.value)" class="border p-1">
-            ${statuses.map(s => `<option ${s===i.status?'selected':''}>${s}</option>`).join("")}
-          </select>
-          <button onclick="deleteItem('${i.id}')" class="text-red-500">X</button>
-        </div>
-      </div>
-    `).join("");
-  }
-
-  // ===== ACTIONS =====
-  window.deleteItem = async (id) => {
-    await deleteDoc(doc(db, "items", id));
+    name.value = "";
   };
 
-  window.updateStatus = async (id, status) => {
-    await updateDoc(doc(db, "items", id), { status });
-  };
+  document.getElementById("search").oninput = renderList;
+  document.getElementById("filter").onchange = renderList;
 
-  // ===== REALTIME =====
-  onSnapshot(collection(db, "items"), (snapshot) => {
-    items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderList();
-  });
+  renderList();
+}
 
-  // ===== AUTH =====
-  onAuthStateChanged(auth, (u) => {
-    user = u;
-    if (u) renderApp();
-    else renderLogin();
-  });
+// ================= LIST =================
+function renderList() {
+  const list = document.getElementById("list");
+  if (!list) return;
+
+  const searchVal = (document.getElementById("search")?.value || "").toLowerCase();
+  const filterVal = document.getElementById("filter")?.value || "";
+
+  const filtered = items.filter(i =>
+    i.name.toLowerCase().includes(searchVal) &&
+    (!filterVal || i.category === filterVal)
+  );
+
+  list.innerHTML = filtered.map(i => `
+    <div class="bg-white p-3 rounded shadow flex justify-between items-center">
+      <div>
+        <div class="font-bold">${i.name}</div>
+        <div class="text-sm text-gray-600">${i.category} | ${i.status}</div>
+      </div>
+      <div class="flex gap-2">
+        <select onchange="updateStatus('${i.id}', this.value)" class="border p-1 rounded">
+          ${statuses.map(s => `<option ${s===i.status?'selected':''}>${s}</option>`).join("")}
+        </select>
+        <button onclick="deleteItem('${i.id}')" class="text-red-500 font-bold">X</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ================= ACTIONS =================
+window.deleteItem = async (id) => {
+  await deleteDoc(doc(db, "items", id));
+};
+
+window.updateStatus = async (id, status) => {
+  await updateDoc(doc(db, "items", id), { status });
+};
+
+// ================= REALTIME =================
+onSnapshot(collection(db, "items"), (snapshot) => {
+  items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  renderList();
+});
+
+// ================= AUTH =================
+onAuthStateChanged(auth, (u) => {
+  user = u;
+  if (u) renderApp();
+  else renderLogin();
+});
 
 </script>
 </body>
