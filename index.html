@@ -5,55 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Packing List App</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- GitHub commit version -->
   <script>
-    
     fetch("https://api.github.com/repos/taherms/CommonPackingListMgt/commits/main")
-  .then(res => res.json())
-  .then(data => {
-    const hash = data.sha.substring(0, 7);
-    document.getElementById("version").innerText = "commit " + hash;
-  });
-
-    // ================ LOAD CONFIG =============
-  async function loadConfig() {
-  const catSnap = await getDocs(collection(db, "config_categories"));
-  const statusSnap = await getDocs(collection(db, "config_statuses"));
-
-  // If empty → seed defaults
-  if (catSnap.empty) {
-    const defaultCats = ["Clothes","Electronics","Documents","Kitchen","Medicines","Misc"];
-    for (const c of defaultCats) {
-      await addDoc(collection(db, "config_categories"), { name: c });
-    }
-  }
-
-  if (statusSnap.empty) {
-    const defaultStatuses = ["To Buy","Purchased","Packed","Not Needed"];
-    for (const s of defaultStatuses) {
-      await addDoc(collection(db, "config_statuses"), { name: s });
-    }
-  }
-
-  // Re-fetch after seeding
-  const catSnap2 = await getDocs(collection(db, "config_categories"));
-  const statusSnap2 = await getDocs(collection(db, "config_statuses"));
-
-  categories = catSnap2.docs.map(d => d.data().name);
-  statuses = statusSnap2.docs.map(d => d.data().name);
-}
+      .then(res => res.json())
+      .then(data => {
+        const hash = data.sha.substring(0, 7);
+        document.getElementById("version").innerText = "commit " + hash;
+      })
+      .catch(() => {
+        document.getElementById("version").innerText = "offline";
+      });
   </script>
 </head>
 
 <body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen flex flex-col">
 
-<!-- APP -->
 <div id="app" class="flex-grow p-3 max-w-5xl mx-auto w-full"></div>
 
 <!-- FOOTER -->
 <footer class="bg-white border-t mt-6">
   <div class="max-w-5xl mx-auto px-4 py-3 text-center text-sm text-gray-600">
-    🚀 Packing List App | Built by <strong>Taher Shabbiri</strong> | 
-    GitHub: <a href="https://github.com/taherms" class="text-blue-500 underline" target="_blank">taherms</a> | Version: <span id="version"></span>
+    🚀 Packing List App | Built by <strong>Taher Shabbiri</strong> |
+    GitHub: <a href="https://github.com/taherms" class="text-blue-500 underline" target="_blank">taherms</a> |
+    Version: <span id="version"></span>
   </div>
 </footer>
 
@@ -68,8 +44,8 @@ import {
   onSnapshot,
   deleteDoc,
   doc,
-  getDocs,
-  updateDoc
+  updateDoc,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 import {
@@ -97,16 +73,45 @@ const auth = getAuth(app);
 
 const appDiv = document.getElementById("app");
 
-//const categories = ["Clothes","Electronics","Documents","Kitchen","Medicines","Misc"];
-//const statuses = ["To Buy","Purchased","Packed","Not Needed"];
+// dynamic config (FROM FIREBASE)
 let categories = [];
 let statuses = [];
-  
+
 let items = [];
 let user = null;
 
+// ================= LOAD CONFIG =================
+async function loadConfig() {
 
-  
+  const catRef = collection(db, "config_categories");
+  const statusRef = collection(db, "config_statuses");
+
+  const catSnap = await getDocs(catRef);
+  const statusSnap = await getDocs(statusRef);
+
+  // seed defaults if empty
+  if (catSnap.empty) {
+    const defaults = ["Clothes","Electronics","Documents","Kitchen","Medicines","Misc"];
+    for (const c of defaults) {
+      await addDoc(catRef, { name: c });
+    }
+  }
+
+  if (statusSnap.empty) {
+    const defaults = ["To Buy","Purchased","Packed","Not Needed"];
+    for (const s of defaults) {
+      await addDoc(statusRef, { name: s });
+    }
+  }
+
+  // re-fetch
+  const catSnap2 = await getDocs(catRef);
+  const statusSnap2 = await getDocs(statusRef);
+
+  categories = catSnap2.docs.map(d => d.data().name);
+  statuses = statusSnap2.docs.map(d => d.data().name);
+}
+
 // ================= LOGIN =================
 function renderLogin() {
   appDiv.innerHTML = `
@@ -120,37 +125,26 @@ function renderLogin() {
         class="border p-3 w-full mb-4 rounded-lg"/>
 
       <button id="loginBtn"
-        class="bg-blue-500 text-white py-2 w-full rounded-lg mb-2">
+        class="bg-blue-500 text-white py-2 w-full rounded-lg">
         Login
       </button>
-
-      <!--<button id="signupBtn"
-        class="bg-green-500 text-white py-2 w-full rounded-lg">
-        Sign Up
-      </button>-->
     </div>
   `;
 
   document.getElementById("loginBtn").onclick = async () => {
     await signInWithEmailAndPassword(auth, email.value, password.value);
   };
-
-  document.getElementById("signupBtn").onclick = async () => {
-    await createUserWithEmailAndPassword(auth, email.value, password.value);
-  };
 }
 
-// ================= APP =================
+// ================= MAIN APP =================
 function renderApp() {
   appDiv.innerHTML = `
     <div class="bg-white rounded-2xl shadow p-4 mb-4 flex justify-between items-center">
-      <h1 class="text-xl md:text-2xl font-bold">📦 Packing List</h1>
+      <h1 class="text-xl font-bold">📦 Packing List</h1>
       <button id="logout" class="bg-red-500 text-white px-4 py-1 rounded-lg">
         Logout
       </button>
     </div>
-
-    
 
     <!-- ADD ITEM -->
     <div class="bg-white p-4 rounded-2xl shadow mb-4">
@@ -173,8 +167,7 @@ function renderApp() {
       </button>
     </div>
 
-
-<!-- SEARCH -->
+    <!-- SEARCH -->
     <div class="grid md:grid-cols-2 gap-3 mb-4">
       <input id="search" placeholder="🔍 Search items..."
         class="border p-3 rounded-lg"/>
@@ -185,17 +178,14 @@ function renderApp() {
       </select>
     </div>
 
-    
     <!-- LIST -->
-    <div id="list" class="grid md:grid-cols-2 gap-3"></div>
+    <div id="list" class="grid gap-3"></div>
   `;
 
   document.getElementById("logout").onclick = () => signOut(auth);
 
   document.getElementById("addBtn").onclick = async () => {
-    const nameInput = document.getElementById("name");
-
-    const name = nameInput.value.trim();
+    const name = document.getElementById("name").value.trim();
     const category = document.getElementById("category").value;
     const status = document.getElementById("status").value;
 
@@ -209,7 +199,7 @@ function renderApp() {
       createdAt: new Date()
     });
 
-    nameInput.value = "";
+    document.getElementById("name").value = "";
   };
 
   document.getElementById("search").oninput = renderList;
@@ -218,7 +208,7 @@ function renderApp() {
   renderList();
 }
 
-// ================= MOBILE-OPTIMIZED LIST =================
+// ================= MOBILE LIST =================
 function renderList() {
   const listEl = document.getElementById("list");
   if (!listEl) return;
@@ -235,9 +225,9 @@ function renderList() {
     ? filtered.map(i => `
       <div class="bg-white rounded-xl shadow p-3 flex flex-col gap-2">
 
-        <div class="flex justify-between items-start">
+        <div class="flex justify-between">
           <div>
-            <div class="font-semibold text-lg break-words">${i.name}</div>
+            <div class="font-semibold">${i.name}</div>
             <div class="text-xs text-gray-500">${i.category}</div>
           </div>
 
@@ -251,7 +241,7 @@ function renderList() {
           </span>
         </div>
 
-        <div class="flex gap-2 items-center">
+        <div class="flex gap-2">
           <select onchange="updateStatus('${i.id}', this.value)"
             class="flex-1 border p-2 rounded-lg text-sm">
             ${statuses.map(s => `<option ${s===i.status?'selected':''}>${s}</option>`).join("")}
@@ -282,13 +272,12 @@ onSnapshot(collection(db, "items"), (snapshot) => {
   setTimeout(renderList, 50);
 });
 
-
-  
 // ================= AUTH =================
-onAuthStateChanged(auth, (u) => {
+onAuthStateChanged(auth, async (u) => {
   user = u;
+
   if (u) {
-    await loadConfig();   // 🔥 IMPORTANT
+    await loadConfig();
     renderApp();
   } else {
     renderLogin();
