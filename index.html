@@ -10,7 +10,7 @@
   .then(res => res.json())
   .then(data => {
     const hash = data.sha.substring(0, 7);
-    document.getElementById("version").innerText = "commit " + hash;
+    document.getElementById("version").innerText =  hash;
   });
   </script>
 </head>
