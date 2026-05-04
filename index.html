@@ -13,6 +13,34 @@
     const hash = data.sha.substring(0, 7);
     document.getElementById("version").innerText = "commit " + hash;
   });
+
+    // ================ LOAD CONFIG =============
+  async function loadConfig() {
+  const catSnap = await getDocs(collection(db, "config_categories"));
+  const statusSnap = await getDocs(collection(db, "config_statuses"));
+
+  // If empty → seed defaults
+  if (catSnap.empty) {
+    const defaultCats = ["Clothes","Electronics","Documents","Kitchen","Medicines","Misc"];
+    for (const c of defaultCats) {
+      await addDoc(collection(db, "config_categories"), { name: c });
+    }
+  }
+
+  if (statusSnap.empty) {
+    const defaultStatuses = ["To Buy","Purchased","Packed","Not Needed"];
+    for (const s of defaultStatuses) {
+      await addDoc(collection(db, "config_statuses"), { name: s });
+    }
+  }
+
+  // Re-fetch after seeding
+  const catSnap2 = await getDocs(collection(db, "config_categories"));
+  const statusSnap2 = await getDocs(collection(db, "config_statuses"));
+
+  categories = catSnap2.docs.map(d => d.data().name);
+  statuses = statusSnap2.docs.map(d => d.data().name);
+}
   </script>
 </head>
 
@@ -77,33 +105,7 @@ let statuses = [];
 let items = [];
 let user = null;
 
-// ================ LOAD CONFIG =============
-  async function loadConfig() {
-  const catSnap = await getDocs(collection(db, "config_categories"));
-  const statusSnap = await getDocs(collection(db, "config_statuses"));
 
-  // If empty → seed defaults
-  if (catSnap.empty) {
-    const defaultCats = ["Clothes","Electronics","Documents","Kitchen","Medicines","Misc"];
-    for (const c of defaultCats) {
-      await addDoc(collection(db, "config_categories"), { name: c });
-    }
-  }
-
-  if (statusSnap.empty) {
-    const defaultStatuses = ["To Buy","Purchased","Packed","Not Needed"];
-    for (const s of defaultStatuses) {
-      await addDoc(collection(db, "config_statuses"), { name: s });
-    }
-  }
-
-  // Re-fetch after seeding
-  const catSnap2 = await getDocs(collection(db, "config_categories"));
-  const statusSnap2 = await getDocs(collection(db, "config_statuses"));
-
-  categories = catSnap2.docs.map(d => d.data().name);
-  statuses = statusSnap2.docs.map(d => d.data().name);
-}
   
 // ================= LOGIN =================
 function renderLogin() {
@@ -280,6 +282,8 @@ onSnapshot(collection(db, "items"), (snapshot) => {
   setTimeout(renderList, 50);
 });
 
+
+  
 // ================= AUTH =================
 onAuthStateChanged(auth, (u) => {
   user = u;
